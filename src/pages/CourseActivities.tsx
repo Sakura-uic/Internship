@@ -1,5 +1,5 @@
 import { useNavigate, useParams } from "react-router";
-import { ArrowLeft, Plus, Play, Clock, Eye, Calendar } from "lucide-react";
+import { ArrowLeft, Plus, Play} from "lucide-react";
 import { courses } from "../data/mockData";
 import { getActivitiesByCourseId } from "../data/activitiesData";
 import { ActivityItem } from "../components/courses/ActivityItem";

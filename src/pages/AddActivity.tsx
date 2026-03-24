@@ -11,7 +11,6 @@ import {
   Trash2,
   Edit,
   Eye,
-  Plus,
   Volume2,
   VolumeX,
   Maximize,

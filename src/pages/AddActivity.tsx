@@ -25,13 +25,6 @@ import { getActivitiesByCourseId } from "../data/activitiesData";
 
 // ── helpers ──────────────────────────────────────────────────────────────────
 
-function formatDate(dateStr?: string) {
-  if (!dateStr) return "";
-  const [year, month, day] = dateStr.split("-");
-  const months = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
-  return `${parseInt(day)} ${months[parseInt(month) - 1]} ${year}`;
-}
-
 function formatTime(seconds: number) {
   if (isNaN(seconds)) return "0:00";
   const m = Math.floor(seconds / 60);
@@ -59,10 +52,10 @@ interface UploadedVideo {
   title: string;
   description: string;
   courseId: string;
-  fileUrl: string; // blob URL for local files
-  thumbnail: string; // generated or placeholder
+  fileUrl: string;
+  thumbnail: string;
   duration: string;
-  rawDuration: number; // seconds
+  rawDuration: number;
   fileSize: string;
   uploadDate: string;
   views: number;
@@ -184,7 +177,6 @@ function VideoPlayer({
     );
   }
 
-  // Local video player
   return (
     <div
       className="aspect-video w-full rounded-xl overflow-hidden bg-black relative group"
@@ -203,13 +195,11 @@ function VideoPlayer({
         onEnded={() => setPlaying(false)}
       />
 
-      {/* Controls overlay */}
       <div
         className={`absolute inset-0 flex flex-col justify-between transition-opacity duration-300 ${
           showControls || !playing ? "opacity-100" : "opacity-0"
         }`}
       >
-        {/* Top bar */}
         <div className="flex items-center justify-between px-4 pt-3 pb-6 bg-gradient-to-b from-black/70 to-transparent">
           <p className="text-sm font-medium text-white truncate max-w-[70%]">{source.title}</p>
           <button
@@ -220,7 +210,6 @@ function VideoPlayer({
           </button>
         </div>
 
-        {/* Center play button */}
         <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
           {!playing && (
             <div className="w-16 h-16 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center">
@@ -229,9 +218,7 @@ function VideoPlayer({
           )}
         </div>
 
-        {/* Bottom controls */}
         <div className="px-4 pb-3 pt-6 bg-gradient-to-t from-black/70 to-transparent">
-          {/* Progress bar */}
           <div
             ref={progressRef}
             onClick={seek}
@@ -247,29 +234,24 @@ function VideoPlayer({
 
           <div className="flex items-center justify-between gap-3">
             <div className="flex items-center gap-2">
-              {/* Skip back */}
               <button onClick={() => skip(-10)} className="text-white/80 hover:text-white transition-colors">
                 <SkipBack className="w-4 h-4" />
               </button>
-              {/* Play/Pause */}
               <button
                 onClick={togglePlay}
                 className="w-8 h-8 rounded-full bg-white/20 hover:bg-white/30 flex items-center justify-center text-white transition-colors"
               >
                 {playing ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4 ml-0.5" />}
               </button>
-              {/* Skip forward */}
               <button onClick={() => skip(10)} className="text-white/80 hover:text-white transition-colors">
                 <SkipForward className="w-4 h-4" />
               </button>
-              {/* Time */}
               <span className="text-xs text-white/80 font-medium tabular-nums">
                 {formatTime(currentTime)} / {formatTime(duration)}
               </span>
             </div>
 
             <div className="flex items-center gap-2">
-              {/* Volume */}
               <button onClick={toggleMute} className="text-white/80 hover:text-white transition-colors">
                 {muted || volume === 0 ? <VolumeX className="w-4 h-4" /> : <Volume2 className="w-4 h-4" />}
               </button>
@@ -282,7 +264,6 @@ function VideoPlayer({
                 onChange={handleVolumeChange}
                 className="w-16 h-1 accent-white cursor-pointer"
               />
-              {/* Fullscreen */}
               <button onClick={fullscreen} className="text-white/80 hover:text-white transition-colors">
                 <Maximize className="w-4 h-4" />
               </button>
@@ -316,20 +297,14 @@ export function AddActivity() {
   const [uploadProgress, setUploadProgress] = useState(0);
   const [isUploading, setIsUploading] = useState(false);
   const [uploadError, setUploadError] = useState("");
-
-  // local uploaded videos (in-session)
   const [uploadedVideos, setUploadedVideos] = useState<UploadedVideo[]>([]);
-
-  // player
   const [playerSource, setPlayerSource] = useState<PlayerSource | null>(null);
 
   const publishedCourses = courses.filter((c) => c.status === "published");
   const selectedCourse = publishedCourses.find((c) => c.id === formData.courseId);
 
-  // existing DB activities for selected course
   const dbActivities = formData.courseId ? getActivitiesByCourseId(formData.courseId) : [];
 
-  // combined list: newly uploaded + existing
   const allVideos = [...uploadedVideos, ...dbActivities.map((a) => ({
     id: a.id,
     title: a.title,
@@ -375,9 +350,7 @@ export function AddActivity() {
         if (prev >= 100) {
           clearInterval(interval);
           setIsUploading(false);
-          // generate blob URL for playback
           const url = URL.createObjectURL(file);
-          // generate thumbnail via video element
           const video = document.createElement("video");
           video.src = url;
           video.currentTime = 2;
@@ -391,11 +364,9 @@ export function AddActivity() {
             const thumb = canvas.toDataURL("image/jpeg", 0.8);
             const dur = video.duration;
             setFormData((p) => {
-              // auto-fill title from filename if empty
               const autoTitle = p.title || file.name.replace(/\.[^/.]+$/, "").replace(/[-_]/g, " ");
               return { ...p, title: autoTitle };
             });
-            // store as new video ready to be saved on submit
             const newVid: UploadedVideo = {
               id: `local-${Date.now()}`,
               title: formData.title || file.name.replace(/\.[^/.]+$/, "").replace(/[-_]/g, " "),
@@ -432,7 +403,6 @@ export function AddActivity() {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    // In production: POST to server
     navigate(formData.courseId ? `/courses/${formData.courseId}/activities` : "/courses");
   };
 
@@ -457,8 +427,6 @@ export function AddActivity() {
       setPlayerSource(null);
     }
   };
-
-  // ── render ─────────────────────────────────────────────────────────────────
 
   return (
     <div className="px-6 py-6 max-w-screen-xl mx-auto" style={{ fontFamily: "'Inter', sans-serif" }}>
@@ -532,17 +500,12 @@ export function AddActivity() {
                         onClick={() => playVideo(video)}
                       >
                         {video.thumbnail ? (
-                          <img
-                            src={video.thumbnail}
-                            alt={video.title}
-                            className="w-full h-full object-cover"
-                          />
+                          <img src={video.thumbnail} alt={video.title} className="w-full h-full object-cover" />
                         ) : (
                           <div className="w-full h-full flex items-center justify-center bg-gray-800">
                             <Video className="w-6 h-6 text-gray-600" />
                           </div>
                         )}
-                        {/* play overlay */}
                         <div className={`absolute inset-0 flex items-center justify-center transition-opacity ${isPlaying ? "bg-[#004080]/40" : "bg-black/0 hover:bg-black/40"}`}>
                           {isPlaying ? (
                             <div className="w-8 h-8 rounded-full bg-white/90 flex items-center justify-center">
@@ -554,13 +517,11 @@ export function AddActivity() {
                             </div>
                           )}
                         </div>
-                        {/* duration badge */}
                         {video.duration && (
                           <div className="absolute bottom-1.5 right-1.5 px-1.5 py-0.5 bg-black/75 rounded text-[10px] text-white font-medium tabular-nums">
                             {video.duration}
                           </div>
                         )}
-                        {/* new badge */}
                         {"isLocal" in video && video.isLocal && (
                           <div className="absolute top-1.5 left-1.5 px-1.5 py-0.5 bg-[#004080] rounded text-[9px] text-white font-semibold">
                             NEW
@@ -570,11 +531,7 @@ export function AddActivity() {
 
                       {/* Info */}
                       <div className="flex-1 min-w-0">
-                        <h3
-                          className={`text-sm font-semibold mb-0.5 truncate ${
-                            isPlaying ? "text-[#004080]" : "text-gray-900"
-                          }`}
-                        >
+                        <h3 className={`text-sm font-semibold mb-0.5 truncate ${isPlaying ? "text-[#004080]" : "text-gray-900"}`}>
                           {video.title}
                         </h3>
                         <p className="text-xs text-gray-400 line-clamp-1 mb-2">
@@ -587,24 +544,10 @@ export function AddActivity() {
                               {video.views.toLocaleString()} views
                             </span>
                           )}
-                          {"fileSize" in video && video.fileSize && (
-                            <span>{video.fileSize}</span>
-                          )}
-                          {video.uploadDate && (
-                            <span>{video.uploadDate}</span>
-                          )}
-                          <span
-                            className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md text-[10px] font-medium ${
-                              video.status === "published"
-                                ? "bg-emerald-50 text-emerald-700"
-                                : "bg-amber-50 text-amber-600"
-                            }`}
-                          >
-                            <span
-                              className={`w-1 h-1 rounded-full ${
-                                video.status === "published" ? "bg-emerald-500" : "bg-amber-400"
-                              }`}
-                            />
+                          {"fileSize" in video && video.fileSize && <span>{video.fileSize}</span>}
+                          {video.uploadDate && <span>{video.uploadDate}</span>}
+                          <span className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md text-[10px] font-medium ${video.status === "published" ? "bg-emerald-50 text-emerald-700" : "bg-amber-50 text-amber-600"}`}>
+                            <span className={`w-1 h-1 rounded-full ${video.status === "published" ? "bg-emerald-500" : "bg-amber-400"}`} />
                             {video.status === "published" ? "Published" : "Draft"}
                           </span>
                         </div>
@@ -612,32 +555,18 @@ export function AddActivity() {
 
                       {/* Actions */}
                       <div className="flex items-center gap-0.5 flex-shrink-0">
-                        <button
-                          onClick={() => playVideo(video)}
-                          className="p-2 text-[#004080] hover:bg-[#004080]/10 rounded-lg transition-colors"
-                          title="Play"
-                        >
+                        <button onClick={() => playVideo(video)} className="p-2 text-[#004080] hover:bg-[#004080]/10 rounded-lg transition-colors" title="Play">
                           <Play className="w-3.5 h-3.5" />
                         </button>
-                        <button
-                          className="p-2 text-gray-400 hover:bg-gray-100 rounded-lg transition-colors"
-                          title="Edit"
-                        >
+                        <button className="p-2 text-gray-400 hover:bg-gray-100 rounded-lg transition-colors" title="Edit">
                           <Edit className="w-3.5 h-3.5" />
                         </button>
                         {"isLocal" in video && video.isLocal ? (
-                          <button
-                            onClick={() => deleteUploadedVideo(video.id)}
-                            className="p-2 text-red-400 hover:bg-red-50 rounded-lg transition-colors"
-                            title="Delete"
-                          >
+                          <button onClick={() => deleteUploadedVideo(video.id)} className="p-2 text-red-400 hover:bg-red-50 rounded-lg transition-colors" title="Delete">
                             <Trash2 className="w-3.5 h-3.5" />
                           </button>
                         ) : (
-                          <button
-                            className="p-2 text-red-400 hover:bg-red-50 rounded-lg transition-colors"
-                            title="Delete"
-                          >
+                          <button className="p-2 text-red-400 hover:bg-red-50 rounded-lg transition-colors" title="Delete">
                             <Trash2 className="w-3.5 h-3.5" />
                           </button>
                         )}
@@ -656,7 +585,6 @@ export function AddActivity() {
             onSubmit={handleSubmit}
             className="bg-white border border-gray-100 rounded-xl shadow-sm p-6 sticky top-6 space-y-5"
           >
-            {/* header */}
             <div className="flex items-center gap-2">
               <div className="w-8 h-8 rounded-lg bg-[#004080]/10 flex items-center justify-center">
                 <Upload className="w-4 h-4 text-[#004080]" />
@@ -664,14 +592,13 @@ export function AddActivity() {
               <h2 className="text-base font-semibold text-gray-900">Upload Video</h2>
             </div>
 
-            {/* ── File Upload ── */}
+            {/* File Upload */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 Video File <span className="text-red-500">*</span>
               </label>
 
               {formData.videoFile ? (
-                /* Uploaded state */
                 <div>
                   {isUploading ? (
                     <div className="border border-gray-200 rounded-xl p-4">
@@ -680,12 +607,8 @@ export function AddActivity() {
                           <Video className="w-4 h-4 text-[#004080]" />
                         </div>
                         <div className="flex-1 min-w-0">
-                          <p className="text-sm font-medium text-gray-900 truncate">
-                            {formData.videoFile.name}
-                          </p>
-                          <p className="text-xs text-gray-400">
-                            {(formData.videoFile.size / (1024 * 1024)).toFixed(1)} MB
-                          </p>
+                          <p className="text-sm font-medium text-gray-900 truncate">{formData.videoFile.name}</p>
+                          <p className="text-xs text-gray-400">{(formData.videoFile.size / (1024 * 1024)).toFixed(1)} MB</p>
                         </div>
                       </div>
                       <div className="flex justify-between text-xs text-gray-500 mb-1.5">
@@ -693,10 +616,7 @@ export function AddActivity() {
                         <span className="font-medium">{Math.min(100, Math.round(uploadProgress))}%</span>
                       </div>
                       <div className="h-1.5 bg-gray-100 rounded-full overflow-hidden">
-                        <div
-                          className="h-full bg-[#004080] rounded-full transition-all duration-200"
-                          style={{ width: `${Math.min(100, uploadProgress)}%` }}
-                        />
+                        <div className="h-full bg-[#004080] rounded-full transition-all duration-200" style={{ width: `${Math.min(100, uploadProgress)}%` }} />
                       </div>
                     </div>
                   ) : (
@@ -705,19 +625,12 @@ export function AddActivity() {
                         <CheckCircle2 className="w-4 h-4 text-emerald-600" />
                       </div>
                       <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium text-emerald-900 truncate">
-                          {formData.videoFile.name}
-                        </p>
-                        <p className="text-xs text-emerald-600">
-                          Ready · {(formData.videoFile.size / (1024 * 1024)).toFixed(1)} MB
-                        </p>
+                        <p className="text-sm font-medium text-emerald-900 truncate">{formData.videoFile.name}</p>
+                        <p className="text-xs text-emerald-600">Ready · {(formData.videoFile.size / (1024 * 1024)).toFixed(1)} MB</p>
                       </div>
                       <button
                         type="button"
-                        onClick={() => {
-                          setFormData((p) => ({ ...p, videoFile: null }));
-                          setUploadProgress(0);
-                        }}
+                        onClick={() => { setFormData((p) => ({ ...p, videoFile: null })); setUploadProgress(0); }}
                         className="text-emerald-500 hover:text-emerald-700 flex-shrink-0 p-1"
                       >
                         <X className="w-4 h-4" />
@@ -726,12 +639,9 @@ export function AddActivity() {
                   )}
                 </div>
               ) : (
-                /* Drop zone */
                 <div
                   className={`border-2 border-dashed rounded-xl p-8 text-center transition-all cursor-pointer ${
-                    isDragging
-                      ? "border-[#004080] bg-[#004080]/5"
-                      : "border-gray-200 hover:border-[#004080]/40 hover:bg-gray-50"
+                    isDragging ? "border-[#004080] bg-[#004080]/5" : "border-gray-200 hover:border-[#004080]/40 hover:bg-gray-50"
                   }`}
                   onDragOver={handleDragOver}
                   onDragLeave={handleDragLeave}
@@ -741,17 +651,9 @@ export function AddActivity() {
                   <div className="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center mx-auto mb-3">
                     <Upload className="w-5 h-5 text-gray-400" />
                   </div>
-                  <p className="text-sm text-gray-600 font-medium mb-1">
-                    Click to upload or drag and drop
-                  </p>
+                  <p className="text-sm text-gray-600 font-medium mb-1">Click to upload or drag and drop</p>
                   <p className="text-xs text-gray-400">MP4, WebM (max 2GB)</p>
-                  <input
-                    id="video-file-input"
-                    type="file"
-                    accept="video/*"
-                    onChange={handleFileChange}
-                    className="hidden"
-                  />
+                  <input id="video-file-input" type="file" accept="video/*" onChange={handleFileChange} className="hidden" />
                 </div>
               )}
 
@@ -763,7 +665,7 @@ export function AddActivity() {
               )}
             </div>
 
-            {/* ── Title ── */}
+            {/* Title */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1.5">
                 Title <span className="text-red-500">*</span>
@@ -778,24 +680,20 @@ export function AddActivity() {
               />
             </div>
 
-            {/* ── Description ── */}
+            {/* Description */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                Description
-              </label>
+              <label className="block text-sm font-medium text-gray-700 mb-1.5">Description</label>
               <textarea
                 placeholder="Brief description…"
                 value={formData.description}
-                onChange={(e) =>
-                  setFormData((p) => ({ ...p, description: e.target.value.slice(0, 500) }))
-                }
+                onChange={(e) => setFormData((p) => ({ ...p, description: e.target.value.slice(0, 500) }))}
                 rows={3}
                 className="w-full px-3 py-2.5 text-sm bg-white border border-gray-200 rounded-lg outline-none focus:border-[#004080] focus:ring-2 focus:ring-[#004080]/10 transition-all resize-none"
               />
               <p className="text-xs text-gray-400 mt-1 text-right">{formData.description.length} / 500</p>
             </div>
 
-            {/* ── Course ── */}
+            {/* Course */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1.5">
                 Course <span className="text-red-500">*</span>
@@ -808,14 +706,12 @@ export function AddActivity() {
               >
                 <option value="">Select a course…</option>
                 {publishedCourses.map((c) => (
-                  <option key={c.id} value={c.id}>
-                    {c.code} – {c.name}
-                  </option>
+                  <option key={c.id} value={c.id}>{c.code} – {c.name}</option>
                 ))}
               </select>
             </div>
 
-            {/* ── Availability Schedule ── */}
+            {/* Availability */}
             <div>
               <div className="flex items-center gap-2 mb-3">
                 <Calendar className="w-3.5 h-3.5 text-[#004080]" />
@@ -823,63 +719,31 @@ export function AddActivity() {
               </div>
               <div className="grid grid-cols-2 gap-2.5">
                 <div>
-                  <label className="block text-xs font-medium text-gray-500 mb-1">
-                    Start Date <span className="text-red-400">*</span>
-                  </label>
+                  <label className="block text-xs font-medium text-gray-500 mb-1">Start Date <span className="text-red-400">*</span></label>
                   <div className="relative">
                     <Calendar className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3 h-3 text-gray-400 pointer-events-none" />
-                    <input
-                      type="date"
-                      value={formData.startDate}
-                      onChange={(e) => setFormData((p) => ({ ...p, startDate: e.target.value }))}
-                      className="w-full pl-7 pr-2 py-2 text-xs bg-white border border-gray-200 rounded-lg outline-none focus:border-[#004080] transition-all"
-                      required
-                    />
+                    <input type="date" value={formData.startDate} onChange={(e) => setFormData((p) => ({ ...p, startDate: e.target.value }))} className="w-full pl-7 pr-2 py-2 text-xs bg-white border border-gray-200 rounded-lg outline-none focus:border-[#004080] transition-all" required />
                   </div>
                 </div>
                 <div>
-                  <label className="block text-xs font-medium text-gray-500 mb-1">
-                    Start Time <span className="text-red-400">*</span>
-                  </label>
+                  <label className="block text-xs font-medium text-gray-500 mb-1">Start Time <span className="text-red-400">*</span></label>
                   <div className="relative">
                     <Clock className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3 h-3 text-gray-400 pointer-events-none" />
-                    <input
-                      type="time"
-                      value={formData.startTime}
-                      onChange={(e) => setFormData((p) => ({ ...p, startTime: e.target.value }))}
-                      className="w-full pl-7 pr-2 py-2 text-xs bg-white border border-gray-200 rounded-lg outline-none focus:border-[#004080] transition-all"
-                      required
-                    />
+                    <input type="time" value={formData.startTime} onChange={(e) => setFormData((p) => ({ ...p, startTime: e.target.value }))} className="w-full pl-7 pr-2 py-2 text-xs bg-white border border-gray-200 rounded-lg outline-none focus:border-[#004080] transition-all" required />
                   </div>
                 </div>
                 <div>
-                  <label className="block text-xs font-medium text-gray-500 mb-1">
-                    End Date <span className="text-red-400">*</span>
-                  </label>
+                  <label className="block text-xs font-medium text-gray-500 mb-1">End Date <span className="text-red-400">*</span></label>
                   <div className="relative">
                     <Calendar className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3 h-3 text-gray-400 pointer-events-none" />
-                    <input
-                      type="date"
-                      value={formData.endDate}
-                      onChange={(e) => setFormData((p) => ({ ...p, endDate: e.target.value }))}
-                      className="w-full pl-7 pr-2 py-2 text-xs bg-white border border-gray-200 rounded-lg outline-none focus:border-[#004080] transition-all"
-                      required
-                    />
+                    <input type="date" value={formData.endDate} onChange={(e) => setFormData((p) => ({ ...p, endDate: e.target.value }))} className="w-full pl-7 pr-2 py-2 text-xs bg-white border border-gray-200 rounded-lg outline-none focus:border-[#004080] transition-all" required />
                   </div>
                 </div>
                 <div>
-                  <label className="block text-xs font-medium text-gray-500 mb-1">
-                    End Time <span className="text-red-400">*</span>
-                  </label>
+                  <label className="block text-xs font-medium text-gray-500 mb-1">End Time <span className="text-red-400">*</span></label>
                   <div className="relative">
                     <Clock className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3 h-3 text-gray-400 pointer-events-none" />
-                    <input
-                      type="time"
-                      value={formData.endTime}
-                      onChange={(e) => setFormData((p) => ({ ...p, endTime: e.target.value }))}
-                      className="w-full pl-7 pr-2 py-2 text-xs bg-white border border-gray-200 rounded-lg outline-none focus:border-[#004080] transition-all"
-                      required
-                    />
+                    <input type="time" value={formData.endTime} onChange={(e) => setFormData((p) => ({ ...p, endTime: e.target.value }))} className="w-full pl-7 pr-2 py-2 text-xs bg-white border border-gray-200 rounded-lg outline-none focus:border-[#004080] transition-all" required />
                   </div>
                 </div>
               </div>
@@ -890,7 +754,7 @@ export function AddActivity() {
               </div>
             </div>
 
-            {/* ── Buttons ── */}
+            {/* Buttons */}
             <div className="space-y-2 pt-1">
               <button
                 type="submit"
@@ -900,17 +764,10 @@ export function AddActivity() {
                 {isUploading ? "Uploading…" : "Upload Video"}
               </button>
               <div className="flex gap-2">
-                <button
-                  type="button"
-                  className="flex-1 py-2 text-xs font-medium text-gray-600 bg-white border border-gray-200 rounded-xl hover:bg-gray-50 transition-colors"
-                >
+                <button type="button" className="flex-1 py-2 text-xs font-medium text-gray-600 bg-white border border-gray-200 rounded-xl hover:bg-gray-50 transition-colors">
                   Save as Draft
                 </button>
-                <button
-                  type="button"
-                  onClick={() => navigate(-1)}
-                  className="flex-1 py-2 text-xs font-medium text-gray-600 bg-white border border-gray-200 rounded-xl hover:bg-gray-50 transition-colors"
-                >
+                <button type="button" onClick={() => navigate(-1)} className="flex-1 py-2 text-xs font-medium text-gray-600 bg-white border border-gray-200 rounded-xl hover:bg-gray-50 transition-colors">
                   Cancel
                 </button>
               </div>
